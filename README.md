@@ -31,67 +31,67 @@ Usage
 The script can be run from the command line with various options. Below is the syntax and explanation of each option.
 
 Command Line Syntax
-python AppleWatch2Dreem.py [options]
+python Apple2Dreem.py [options]
 Options
 -i, --input
 Description: Specify the input folder containing the JSON files.
 Default: Current directory (.)
 Usage:
 
-python AppleWatch2Dreem.py -i path/to/input_folder
+python Apple2Dreem.py -i path/to/input_folder
 -o, --output
 Description: Specify the output folder where CSV files will be saved.
 Default: Same as input folder
 Usage:
 
-python AppleWatch2Dreem.py -o path/to/output_folder
+python Apple2Dreem.py -o path/to/output_folder
 -f, --from
 Description: Specify the start date and time for processing data.
 Format: yyyy-MM-dd or yyyy-MM-dd-HH:mm
 Default: Yesterday at 19:00
 Usage:
 
-python AppleWatch2Dreem.py -f 2024-11-22
-python AppleWatch2Dreem.py -f 2024-11-22-19:00
+python Apple2Dreem.py -f 2024-11-22
+python Apple2Dreem.py -f 2024-11-22-19:00
 -t, --to
 Description: Specify the end date and time for processing data.
 Format: yyyy-MM-dd or yyyy-MM-dd-HH:mm
 Default: Today at 11:00
 Usage:
 
-python AppleWatch2Dreem.py -t 2024-11-23
-python AppleWatch2Dreem.py -t 2024-11-23-11:00
+python Apple2Dreem.py -t 2024-11-23
+python Apple2Dreem.py -t 2024-11-23-11:00
 -l, --filter
 Description: Specify the input file filter (supports wildcards).
 Default: HealthAutoExport-*.json
 Usage:
 
-python AppleWatch2Dreem.py -l "MyHealthData-*.json"
+python Apple2Dreem.py -l "MyHealthData-*.json"
 -s, --shift
 Description: Specify a time shift in seconds to adjust the timestamps in the data.
 Default: 0 seconds
 Usage:
 
-python AppleWatch2Dreem.py -s 3600  # Shift time by 1 hour forward
-python AppleWatch2Dreem.py -s -1800 # Shift time by 30 minutes backward
+python Apple2Dreem.py -s 3600  # Shift time by 1 hour forward
+python Apple2Dreem.py -s -1800 # Shift time by 30 minutes backward
 -h, --help
 Description: Display the help message and exit.
 Usage:
 
-python AppleWatch2Dreem.py -h
+python Apple2Dreem.py -h
 Examples
 Process all default JSON files in the current directory with default dates and no time shift:
 
-python AppleWatch2Dreem.py
+python Apple2Dreem.py
 Process files in a specific input folder and output to a different folder:
 
-python AppleWatch2Dreem.py -i ./input_folder -o ./output_folder
+python Apple2Dreem.py -i ./input_folder -o ./output_folder
 Process data from a specific date range with a time shift of 1 hour forward:
 
-python AppleWatch2Dreem.py -f 2024-11-22 -t 2024-11-23 -s 3600
+python Apple2Dreem.py -f 2024-11-22 -t 2024-11-23 -s 3600
 Use a custom file filter to process specific files:
 
-python AppleWatch2Dreem.py -l "MySleepData-2024-*.json"
+python Apple2Dreem.py -l "MySleepData-2024-*.json"
 Default Values
 If no options are specified, the script uses the following default values:
 
