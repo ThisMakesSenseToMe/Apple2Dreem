@@ -5,13 +5,13 @@ One should provide input files from the Apple Watch using the Auto Export iOS ap
 https://apps.apple.com/nl/app/health-auto-export-json-csv/id1115567069
 
 App Settings: 
-Select only Sleep Metrics (Sleep Analysis) for export
-Export Format: JSON
+Select only Sleep Metrics (Sleep Analysis) for export,
+Export Format: JSON,
 Aggregate Data: False
 
-AppleWatch2Dreem Script
+Apple2Dreem Script
 Description
-The AppleWatch2Dreem.py script is designed to convert sleep data exported from Apple Health (specifically from the Apple Watch) into a format compatible with Dreem, a sleep analysis platform. The script processes JSON files containing sleep metrics and generates CSV files with sleep segments and statistics.
+The Apple2Dreem.py script is designed to convert sleep data exported from Apple Health (specifically from the Apple Watch) into a format compatible with Dreem, a sleep analysis platform. The script processes JSON files containing sleep metrics and generates CSV files with sleep segments and statistics.
 
 Features
 Parses Apple Health sleep data exported in JSON format.
