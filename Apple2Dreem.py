@@ -2,12 +2,16 @@ import sys
 import os
 import argparse
 import json
+import csv
 import math
 from datetime import datetime, timedelta, time
 from typing import List
 from dateutil import parser as date_parser
 from dateutil import tz
+from zoneinfo import ZoneInfo
 import glob
+from zipfile import ZipFile
+from io import TextIOWrapper
 
 class SleepSegment:
     def __init__(self, start: datetime, stage: str):
@@ -66,6 +70,18 @@ def map_sleep_stage(stage: str) -> str:
         "InBed": "WAKE"
     }
     return mapping.get(stage, "WAKE")
+
+def health_export_csv_map_sleep_stage(stage: str) -> str:
+    # Map stage values found in csv files to those in JSON files
+    mapping = {
+        "asleep":       "Asleep",
+        "asleepCore":   "Core",
+        "asleepDeep":   "Deep",
+        "asleepREM":    "REM",
+        "awake":        "Awake",
+        "inBed":        "InBed"
+    }
+    return mapping.get(stage, "Awake")
 
 def update_segments_with_sleep_data(segments: List[SleepSegment], sleep_data: List[SleepEntry]):
     for entry in sleep_data:
@@ -219,43 +235,100 @@ def parse_datetime(input_str: str) -> datetime:
         print(f"Invalid date format: {input_str}.")
         return None
 
-def process_file(input_file: str, output_folder: str, from_date: datetime, to_date: datetime, time_shift_seconds: int):
+def process_file(input_file: str, output_folder: str, from_date: datetime, to_date: datetime, time_shift_seconds: int, input_type: str, rename: bool, ):
     print(f"Processing file: {input_file}")
+    
+    if input_type == 'json': # Support for "Health Auto Export - JSON+CSV" iOS App, json files are expected
 
-    try:
-        with open(input_file, 'r', encoding='utf-8') as f:
-            json_string = f.read()
-    except Exception as ex:
-        print(f"Warning: Unable to read file {input_file}. Error: {ex}")
+        try:
+            with open(input_file, 'r', encoding='utf-8') as f:
+                json_string = f.read()
+        except Exception as ex:
+            print(f"Warning: Unable to read file {input_file}. Error: {ex}")
+            return
+
+        try:
+            health_data_dict = json.loads(json_string)
+        except json.JSONDecodeError as ex:
+            print(f"Warning: Invalid JSON in file {input_file}. Error: {ex}")
+            return
+
+        if 'data' not in health_data_dict or 'metrics' not in health_data_dict['data']:
+            print(f"Warning: The file {input_file} does not contain valid health data.")
+            return
+
+        metrics_list = health_data_dict['data']['metrics']
+        if not metrics_list or 'data' not in metrics_list[0]:
+            print(f"Warning: No sleep data found in file {input_file}.")
+            return
+
+        sleep_data_list = metrics_list[0]['data']
+
+        sleep_entries = []
+        for entry in sleep_data_list:
+            sleep_entry = SleepEntry(
+                source=entry.get('source', ''),
+                qty=entry.get('qty', 0),
+                start_date=parse_iso8601(entry.get('startDate', '')),
+                value=entry.get('value', ''),
+                end_date=parse_iso8601(entry.get('endDate', '')),
+            )
+            sleep_entries.append(sleep_entry)
+            
+    elif input_type == 'csv': # Support for "Simple Health Export CSV" iOS App format, CSV files are expected to be in ZIP archives
+        
+        try:
+            with ZipFile(input_file, mode='r') as zf:
+                for file in zf.namelist():
+                    if not file.endswith('.csv'): # optional filtering by filetype
+                        continue
+                    with zf.open(file, mode='r') as fb:
+                        
+                        f = TextIOWrapper(fb, encoding="utf-8", newline=None)
+                        
+                        try:
+                            # The HealthExportCSV app puts a non-standard extra line at the top containing "sep=,"
+                            line1 = f.readline()
+                            if line1.startswith('sep=,'):
+                                # Skip the separator line
+                                pass
+                            else:
+                                f.seek(0)                              
+                                
+                            sleep_entries = []
+                            csvreader = csv.DictReader(f, delimiter=',', quotechar='"')
+                            # columns: type,sourceName,sourceVersion,productType,device,startDate,endDate,value,HKTimeZone
+                            for row in csvreader:
+                                time_zone = row['HKTimeZone']
+                                source = row['sourceName']
+                                start_date = parse_iso8601(row['startDate']).astimezone(ZoneInfo(time_zone))
+                                end_date = parse_iso8601(row['endDate']).astimezone(ZoneInfo(time_zone))
+                                value = health_export_csv_map_sleep_stage(row['value'])
+                                qty = (end_date - start_date).total_seconds()/3600.0
+                                sleep_entry = SleepEntry(
+                                    source=source,
+                                    qty=qty,
+                                    start_date=start_date,
+                                    value=value,
+                                    end_date=end_date,
+                                )
+                                sleep_entries.append(sleep_entry)
+                        
+                        except Exception as ex:
+                            print(f"Warning: Unable to read contents of file {input_file}. Error: {ex}")
+                            return
+
+        except Exception as ex:
+            print(f"Warning: Unable to read file {input_file}. Error: {ex}")
+            return
+
+            
+    else:
+        
+        print(f"Error: Invalid input_type {input_type}")
         return
 
-    try:
-        health_data_dict = json.loads(json_string)
-    except json.JSONDecodeError as ex:
-        print(f"Warning: Invalid JSON in file {input_file}. Error: {ex}")
-        return
-
-    if 'data' not in health_data_dict or 'metrics' not in health_data_dict['data']:
-        print(f"Warning: The file {input_file} does not contain valid health data.")
-        return
-
-    metrics_list = health_data_dict['data']['metrics']
-    if not metrics_list or 'data' not in metrics_list[0]:
-        print(f"Warning: No sleep data found in file {input_file}.")
-        return
-
-    sleep_data_list = metrics_list[0]['data']
-
-    sleep_entries = []
-    for entry in sleep_data_list:
-        sleep_entry = SleepEntry(
-            source=entry.get('source', ''),
-            qty=entry.get('qty', 0),
-            start_date=parse_iso8601(entry.get('startDate', '')),
-            value=entry.get('value', ''),
-            end_date=parse_iso8601(entry.get('endDate', ''))
-        )
-        sleep_entries.append(sleep_entry)
+            
 
     if not validate_sleep_data(sleep_entries, input_file):
         return
@@ -305,13 +378,13 @@ def process_file(input_file: str, output_folder: str, from_date: datetime, to_da
             f"Apple2Dreem_{night_date.strftime('%Y-%m-%d')}_{segment_start_date.strftime('%H-%M')}_{segment_end_date.strftime('%H-%M')}.csv")
         process_health_data(entries, output_file, segment_start_date, segment_end_date, time_shift_seconds)
         print(f"Processed data for night of {night_date.strftime('%Y-%m-%d')} from {segment_start_date.strftime('%H:%M')} to {segment_end_date.strftime('%H:%M')}. Output saved to {output_file}")
-
-    try:
-        new_file_name = get_unique_file_name(os.path.join(os.path.dirname(input_file), "_" + os.path.basename(input_file)))
-        os.rename(input_file, new_file_name)
-        print(f"Renamed {input_file} to {new_file_name}")
-    except Exception as ex:
-        print(f"Warning: Unable to rename processed file {input_file}. Error: {ex}")
+    if rename:
+      try:
+          new_file_name = get_unique_file_name(os.path.join(os.path.dirname(input_file), "_" + os.path.basename(input_file)))
+          os.rename(input_file, new_file_name)
+          print(f"Renamed {input_file} to {new_file_name}")
+      except Exception as ex:
+          print(f"Warning: Unable to rename processed file {input_file}. Error: {ex}")
 
 def main():
     parser = argparse.ArgumentParser(description='AppleWatch2Dreem')
@@ -322,6 +395,8 @@ def main():
     parser.add_argument('-t', '--to', dest='to_date', help='Specify end date (format: yyyy-MM-dd or yyyy-MM-dd-HH:mm)')
     parser.add_argument('-l', '--filter', help='Specify input file filter (default: HealthAutoExport-*.json)', default='HealthAutoExport-*.json')
     parser.add_argument('-s', '--shift', type=int, help='Specify time shift in seconds (positive or negative)', default=0)
+    parser.add_argument('-y', '--type', help='Specify input file type: json (Health Auto Export app) or csv (Simple Health Export CSV app) (default: json)', default='json')
+    parser.add_argument('-r', '--rename', help='Specify whether to rename the input file upon completion (default: true)', default='true')
 
     args = parser.parse_args()
 
@@ -331,6 +406,8 @@ def main():
     from_date = parse_datetime(args.from_date)
     to_date = parse_datetime(args.to_date)
     time_shift_seconds = args.shift
+    input_type = args.type
+    rename = args.rename == 'true'
 
     if not output_folder:
         output_folder = input_folder
@@ -349,6 +426,10 @@ def main():
         to_date = to_date.replace(hour=11, minute=0, second=0, microsecond=0)
     if to_date.tzinfo is None:
         to_date = to_date.replace(tzinfo=tz.tzlocal())
+        
+    if not (input_type=='json' or input_type =='csv'):
+        print (f"Error: invalid type '{input_type}'; must be 'json' or 'csv'")
+        return
 
     print(f"Input folder: {input_folder}")
     print(f"Output folder: {output_folder}")
@@ -356,6 +437,8 @@ def main():
     print(f"From date: {from_date}")
     print(f"To date: {to_date}")
     print(f"Time shift: {time_shift_seconds} seconds")
+    print(f"Input type: {input_type}")
+    print(f"Rename input: {rename}")
 
     if not os.path.exists(input_folder):
         print(f"Error: Input folder '{input_folder}' does not exist.")
@@ -373,7 +456,7 @@ def main():
 
     for file in files:
         try:
-            process_file(file, output_folder, from_date, to_date, time_shift_seconds)
+            process_file(file, output_folder, from_date, to_date, time_shift_seconds, input_type, rename)
             processed_files += 1
         except Exception as ex:
             print(f"Warning: Failed to process file {file}. Error: {ex}")
