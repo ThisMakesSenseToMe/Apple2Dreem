@@ -10,6 +10,8 @@ from dateutil import parser as date_parser
 from dateutil import tz
 from zoneinfo import ZoneInfo
 import glob
+from zipfile import ZipFile
+from io import TextIOWrapper
 
 class SleepSegment:
     def __init__(self, start: datetime, stage: str):
@@ -276,37 +278,43 @@ def process_file(input_file: str, output_folder: str, from_date: datetime, to_da
     elif input_type == 'csv':
         
         try:
-            with open(input_file, 'r', encoding='utf-8') as f:
-                
-                try:
-                    # The HealthExportCSV app puts a non-standard extra line at the top containing "sep=,"
-                    line1 = f.readline()
-                    if line1 != 'sep=,\n':
-                        # put the line back if it's not the one we're trying to get rid of
-                        f.seek(0)
-                    
-                    sleep_entries = []
-                    csvreader = csv.DictReader(f, delimiter=',', quotechar='"')
-                    # columns: type,sourceName,sourceVersion,productType,device,startDate,endDate,value,HKTimeZone
-                    for row in csvreader:
-                        time_zone = row['HKTimeZone']
-                        source = row['sourceName']
-                        start_date = parse_iso8601(row['startDate']).astimezone(ZoneInfo(time_zone))
-                        end_date = parse_iso8601(row['endDate']).astimezone(ZoneInfo(time_zone))
-                        value = health_export_csv_map_sleep_stage(row['value'])
-                        qty = (end_date - start_date).total_seconds()/3600.0
-                        sleep_entry = SleepEntry(
-                            source=source,
-                            qty=qty,
-                            start_date=start_date,
-                            value=value,
-                            end_date=end_date,
-                        )
-                        sleep_entries.append(sleep_entry)
-                
-                except Exception as ex:
-                    print(f"Warning: Unable to read contents of file {input_file}. Error: {ex}")
-                    return
+            with ZipFile(input_file, mode='r') as zf:
+                for file in zf.namelist():
+                    if not file.endswith('.csv'): # optional filtering by filetype
+                        continue
+                    with zf.open(file, mode='r') as fb:
+                        
+                        f = TextIOWrapper(fb, encoding="utf-8", newline=None)
+                        
+                        try:
+                            # The HealthExportCSV app puts a non-standard extra line at the top containing "sep=,"
+                            line1 = f.readline()
+                            if line1 != 'sep=,\n':
+                                # put the line back if it's not the one we're trying to get rid of
+                                f.seek(0)
+                            
+                            sleep_entries = []
+                            csvreader = csv.DictReader(f, delimiter=',', quotechar='"')
+                            # columns: type,sourceName,sourceVersion,productType,device,startDate,endDate,value,HKTimeZone
+                            for row in csvreader:
+                                time_zone = row['HKTimeZone']
+                                source = row['sourceName']
+                                start_date = parse_iso8601(row['startDate']).astimezone(ZoneInfo(time_zone))
+                                end_date = parse_iso8601(row['endDate']).astimezone(ZoneInfo(time_zone))
+                                value = health_export_csv_map_sleep_stage(row['value'])
+                                qty = (end_date - start_date).total_seconds()/3600.0
+                                sleep_entry = SleepEntry(
+                                    source=source,
+                                    qty=qty,
+                                    start_date=start_date,
+                                    value=value,
+                                    end_date=end_date,
+                                )
+                                sleep_entries.append(sleep_entry)
+                        
+                        except Exception as ex:
+                            print(f"Warning: Unable to read contents of file {input_file}. Error: {ex}")
+                            return
 
         except Exception as ex:
             print(f"Warning: Unable to read file {input_file}. Error: {ex}")
