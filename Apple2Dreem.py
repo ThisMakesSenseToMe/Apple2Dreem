@@ -238,7 +238,7 @@ def parse_datetime(input_str: str) -> datetime:
 def process_file(input_file: str, output_folder: str, from_date: datetime, to_date: datetime, time_shift_seconds: int, input_type: str, rename: bool, ):
     print(f"Processing file: {input_file}")
     
-    if input_type == 'json':
+    if input_type == 'json': # Support for "Health Auto Export - JSON+CSV" iOS App, json files are expected
 
         try:
             with open(input_file, 'r', encoding='utf-8') as f:
@@ -275,7 +275,7 @@ def process_file(input_file: str, output_folder: str, from_date: datetime, to_da
             )
             sleep_entries.append(sleep_entry)
             
-    elif input_type == 'csv':
+    elif input_type == 'csv': # Support for "Simple Health Export CSV" iOS App format, CSV files are expected to be in ZIP archives
         
         try:
             with ZipFile(input_file, mode='r') as zf:
@@ -289,10 +289,12 @@ def process_file(input_file: str, output_folder: str, from_date: datetime, to_da
                         try:
                             # The HealthExportCSV app puts a non-standard extra line at the top containing "sep=,"
                             line1 = f.readline()
-                            if line1 != 'sep=,\n':
-                                # put the line back if it's not the one we're trying to get rid of
-                                f.seek(0)
-                            
+                            if line1.startswith('sep=,'):
+                                # Skip the separator line
+                                pass
+                            else:
+                                f.seek(0)                              
+                                
                             sleep_entries = []
                             csvreader = csv.DictReader(f, delimiter=',', quotechar='"')
                             # columns: type,sourceName,sourceVersion,productType,device,startDate,endDate,value,HKTimeZone
