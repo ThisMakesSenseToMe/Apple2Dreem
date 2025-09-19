@@ -1,6 +1,10 @@
 import sys
 import os
 import argparse
+
+class SkipProcessing(Exception):
+    """Signal that a file should be skipped without counting as failure."""
+    pass
 import json
 import csv
 import math
@@ -235,7 +239,7 @@ def parse_datetime(input_str: str) -> datetime:
         print(f"Invalid date format: {input_str}.")
         return None
 
-def process_file(input_file: str, output_folder: str, from_date: datetime, to_date: datetime, time_shift_seconds: int, input_type: str, rename: bool, ):
+def process_file(input_file: str, output_folder: str, from_date: datetime, to_date: datetime, time_shift_seconds: int, input_type: str, rename: bool, use_source: str = None):
     print(f"Processing file: {input_file}")
     
     if input_type == 'json': # Support for "Health Auto Export - JSON+CSV" iOS App, json files are expected
@@ -330,6 +334,25 @@ def process_file(input_file: str, output_folder: str, from_date: datetime, to_da
 
             
 
+
+    # List available sources and handle multi-source logic
+    sources = sorted(set(e.Source for e in sleep_entries if e.Source))
+    if sources:
+        print(f"Sources found in {input_file}: {', '.join(sources)}")
+    else:
+        print(f"Sources found in {input_file}: (none)")
+
+    if use_source:
+        if use_source not in sources:
+            raise SkipProcessing(f"Specified source not present: {use_source}")
+        sleep_entries = [e for e in sleep_entries if e.Source == use_source]
+        if not sleep_entries:
+            raise SkipProcessing(f"No entries after filtering by source: {use_source}")
+    else:
+        if len(sources) > 1:
+            raise SkipProcessing(f"Multiple sources detected: {', '.join(sources)}. Specify -u/--use-source.")
+
+    # Validate after filtering
     if not validate_sleep_data(sleep_entries, input_file):
         return
 
@@ -397,6 +420,7 @@ def main():
     parser.add_argument('-s', '--shift', type=int, help='Specify time shift in seconds (positive or negative)', default=0)
     parser.add_argument('-y', '--type', help='Specify input file type: json (Health Auto Export app) or csv (Simple Health Export CSV app) (default: json)', default='json')
     parser.add_argument('-r', '--rename', help='Specify whether to rename the input file upon completion (default: true)', default='true')
+    parser.add_argument('-u', '--use-source', dest='use_source', help='Only process entries from this source when multiple sources are present')
 
     args = parser.parse_args()
 
@@ -408,6 +432,7 @@ def main():
     time_shift_seconds = args.shift
     input_type = args.type
     rename = args.rename == 'true'
+    use_source = args.use_source
 
     if not output_folder:
         output_folder = input_folder
@@ -452,17 +477,21 @@ def main():
         return
 
     processed_files = 0
+    skipped_files = 0
     failed_files = 0
 
     for file in files:
         try:
-            process_file(file, output_folder, from_date, to_date, time_shift_seconds, input_type, rename)
+            process_file(file, output_folder, from_date, to_date, time_shift_seconds, input_type, rename, use_source)
             processed_files += 1
+        except SkipProcessing as ex:
+            print(f"Skipped {file}: {ex}")
+            skipped_files += 1
         except Exception as ex:
             print(f"Warning: Failed to process file {file}. Error: {ex}")
             failed_files += 1
 
-    print(f"Processing complete. Processed files: {processed_files}, Failed files: {failed_files}")
+    print(f"Processing complete. Processed files: {processed_files}, Skipped files: {skipped_files}, Failed files: {failed_files}")
 
 if __name__ == "__main__":
     main()
