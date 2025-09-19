@@ -22,19 +22,26 @@ App Settings:
 
 https://apps.apple.com/us/app/simple-health-export-csv/id1535380115
 
-The app exports CSV files compressed into a dip file. Apple2Dreem.py processes the exported zip files directly. To use this data format, specify the ```--type csv``` option to Apple2Dreem.py.
+The app exports CSV files compressed into a zip file. Apple2Dreem.py processes the exported zip files directly. To use this data format, specify the ```--type csv``` option to Apple2Dreem.py.
+
+Note: The ZIP files can be targeted with `-l "*.zip"` when using `-y csv`.
 
 ## Apple2Dreem.py Description
 
-The Apple2Dreem.py script is designed to convert sleep data exported from Apple Health (specifically from the Apple Watch) into a format compatible with Dreem, a sleep analysis platform. The script processes JSON files containing sleep metrics and generates CSV files with sleep segments and statistics.
+The Apple2Dreem.py script converts sleep data exported from Apple Health (Apple Watch) into a format compatible with Dreem. It processes JSON files from Health Auto Export and CSV files inside ZIP archives from Simple Health Export CSV, and generates CSV files with sleep segments and statistics.
 
 ## Features
 
-  * Parses Apple Health sleep data exported in JSON format.
+  * Parses Apple Health sleep data exported in JSON format and CSV format (ZIP).
   * Groups sleep data by night, considering sleep sessions from 19:00 to 11:00 the next day.
   * Handles time zones and time shifts, ensuring accurate time representation.
   * Generates CSV files containing detailed sleep analysis compatible with Dreem.
   * Automatically renames processed files to prevent reprocessing (optionally disableable).
+
+
+  * Detects multiple data sources in an input file. If multiple sources are found and no source is specified, the file is skipped and the sources are listed.
+  * `-u/--use-source` option to process only a specified source when multiple sources exist.
+  * End-of-run summary now reports processed, skipped, and failed file counts.
 
 ## Prerequisites
 
@@ -120,6 +127,14 @@ Usage:
 
     python Apple2Dreem.py -r false
 
+
+-u, --use-source
+Description: When multiple data sources are present in the input, process only entries from the specified source. Suppresses the multi-source warning and skip.
+Usage:
+
+    python Apple2Dreem.py -u "John's Apple Watch"
+
+
 -h, --help
 Description: Display the help message and exit.
 Usage:
@@ -178,6 +193,9 @@ The script searches for JSON or CSV.ZIP files in the input folder that match the
   * Parses sleep data entries, converting date strings into datetime objects.
   * Ensures all datetime objects are timezone-aware.
 
+  * For JSON: reads Health Auto Export files and parses sleep entries.
+  * For CSV: reads Simple Health Export CSV ZIP files (*.zip), parses rows, and maps stage values to JSON-equivalent stages.
+
 ### Grouping Sleep Data:
 
   * Groups sleep data entries by night, considering sessions from 19:00 to 11:00 the next day.
@@ -218,6 +236,9 @@ Renames the processed JSON files by prefixing them with an underscore (_) to pre
 **No Files Found**: If the script reports that no files were found, verify that the file filter matches the filenames in the input folder.
 
 **Permission Issues**: If the script cannot read or write files, check the permissions of the input and output directories.
+
+
+**Multiple Sources Detected**: If a file contains entries from more than one source, the script will skip it and list the sources. Re-run with `-u "<source name>"` to process only that source.
 
 ## Contributing
 
