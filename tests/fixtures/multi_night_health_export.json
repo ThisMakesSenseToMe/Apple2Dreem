@@ -1,0 +1,61 @@
+{
+  "data": {
+    "metrics": [
+      {
+        "name": "sleep_analysis",
+        "units": "hr",
+        "data": [
+          {
+            "source": "Example Watch",
+            "qty": 0.0166666667,
+            "startDate": "2025-01-01 23:00:00 +0100",
+            "endDate": "2025-01-01 23:01:00 +0100",
+            "value": "Core"
+          },
+          {
+            "source": "Example Watch",
+            "qty": 0.0166666667,
+            "startDate": "2025-01-01 23:01:00 +0100",
+            "endDate": "2025-01-01 23:02:00 +0100",
+            "value": "Deep"
+          },
+          {
+            "source": "Example Watch",
+            "qty": 0.0083333333,
+            "startDate": "2025-01-01 23:02:00 +0100",
+            "endDate": "2025-01-01 23:02:30 +0100",
+            "value": "REM"
+          },
+          {
+            "source": "Example Watch",
+            "qty": 0.0083333333,
+            "startDate": "2025-01-02 22:29:30 +0100",
+            "endDate": "2025-01-02 22:30:00 +0100",
+            "value": "InBed"
+          },
+          {
+            "source": "Example Watch",
+            "qty": 0.0083333333,
+            "startDate": "2025-01-02 22:30:00 +0100",
+            "endDate": "2025-01-02 22:30:30 +0100",
+            "value": "Awake"
+          },
+          {
+            "source": "Example Watch",
+            "qty": 0.0166666667,
+            "startDate": "2025-01-02 22:30:30 +0100",
+            "endDate": "2025-01-02 22:31:30 +0100",
+            "value": "Core"
+          },
+          {
+            "source": "Example Watch",
+            "qty": 0.0083333333,
+            "startDate": "2025-01-02 22:31:30 +0100",
+            "endDate": "2025-01-02 22:32:00 +0100",
+            "value": "REM"
+          }
+        ]
+      }
+    ]
+  }
+}

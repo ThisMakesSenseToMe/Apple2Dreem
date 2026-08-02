@@ -1,0 +1,2 @@
+Type;Start Time;Stop Time;Sleep Duration;Sleep Onset Duration;Light Sleep Duration;Deep Sleep Duration;REM Duration;Wake After Sleep Onset Duration;Number of awakenings;Position Changes;Mean Heart Rate;Mean Respiration CPM;Number of Stimulations;Sleep efficiency;Hypnogram
+night;2025-01-02T22:29:30;2025-01-02T22:32:00;0:02:30;0:01:00;0:01:00;0:00:00;0:00:30;0:00:00;0;0;0;0;0;0;[WAKE,WAKE,Light,Light,REM]

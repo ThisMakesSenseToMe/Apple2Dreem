@@ -17,6 +17,15 @@ import glob
 from zipfile import ZipFile
 from io import TextIOWrapper
 
+HEALTH_EXPORT_CSV_SLEEP_STAGES = {
+    "asleep": "Asleep",
+    "asleepCore": "Core",
+    "asleepDeep": "Deep",
+    "asleepREM": "REM",
+    "awake": "Awake",
+    "inBed": "InBed"
+}
+
 class SleepSegment:
     def __init__(self, start: datetime, stage: str):
         self.Start = start
@@ -77,15 +86,7 @@ def map_sleep_stage(stage: str) -> str:
 
 def health_export_csv_map_sleep_stage(stage: str) -> str:
     # Map stage values found in csv files to those in JSON files
-    mapping = {
-        "asleep":       "Asleep",
-        "asleepCore":   "Core",
-        "asleepDeep":   "Deep",
-        "asleepREM":    "REM",
-        "awake":        "Awake",
-        "inBed":        "InBed"
-    }
-    return mapping.get(stage, "Awake")
+    return HEALTH_EXPORT_CSV_SLEEP_STAGES.get(stage, "Awake")
 
 def update_segments_with_sleep_data(segments: List[SleepSegment], sleep_data: List[SleepEntry]):
     for entry in sleep_data:
@@ -94,7 +95,7 @@ def update_segments_with_sleep_data(segments: List[SleepSegment], sleep_data: Li
         stage = map_sleep_stage(entry.Value)
 
         for segment in segments:
-            if start <= segment.Start <= end and segment.Stage == "WAKE":
+            if start <= segment.Start < end and segment.Stage == "WAKE":
                 segment.Stage = stage
 
 def calculate_duration(start: datetime, end: datetime) -> str:
@@ -283,6 +284,7 @@ def process_file(input_file: str, output_folder: str, from_date: datetime, to_da
         
         try:
             with ZipFile(input_file, mode='r') as zf:
+                sleep_entries = []
                 for file in zf.namelist():
                     if not file.endswith('.csv'): # optional filtering by filetype
                         continue
@@ -299,10 +301,11 @@ def process_file(input_file: str, output_folder: str, from_date: datetime, to_da
                             else:
                                 f.seek(0)                              
                                 
-                            sleep_entries = []
                             csvreader = csv.DictReader(f, delimiter=',', quotechar='"')
                             # columns: type,sourceName,sourceVersion,productType,device,startDate,endDate,value,HKTimeZone
                             for row in csvreader:
+                                if row.get('value') not in HEALTH_EXPORT_CSV_SLEEP_STAGES:
+                                    continue
                                 time_zone = row['HKTimeZone']
                                 source = row['sourceName']
                                 start_date = parse_iso8601(row['startDate']).astimezone(ZoneInfo(time_zone))

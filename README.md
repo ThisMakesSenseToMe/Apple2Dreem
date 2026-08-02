@@ -45,14 +45,22 @@ The Apple2Dreem.py script converts sleep data exported from Apple Health (Apple 
 
 ## Prerequisites
 
-  * Python 3.6 or higher
+  * Python 3.9 or higher
   * Required Python libraries:
     * python-dateutil
 
 ## Installation
   * Clone or download the script to your local machine.
   * Install the required libraries using pip:
-  * pip install python-dateutil
+  * `python -m pip install --requirement requirements.txt`
+
+## Tests
+
+Run the conversion tests with:
+
+```
+python -m unittest discover --start-directory tests --verbose
+```
 
 ## Usage
 
