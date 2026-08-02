@@ -1,4 +1,4 @@
-# Apple2Dreem Script
+# Apple2Dreem: Import Apple Watch Sleep Data into OSCAR
 
 This script can convert the sleep data from your Apple Watch to the format of the Dreem headband. This enables software like OSCAR to import it.
 
