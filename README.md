@@ -2,6 +2,12 @@
 
 This script can convert the sleep data from your Apple Watch to the format of the Dreem headband. This enables software like OSCAR to import it.
 
+## OSCAR compatibility
+
+As of OSCAR 2.0.1, OSCAR does not provide a direct Apple Health or Apple Watch sleep-stage importer. Apple2Dreem fills that gap by converting exported Apple Health sleep stages into Dreem-compatible CSV files. Import the generated files in OSCAR using **File > Import Dreem Data**.
+
+OSCAR's own Dreem loader explicitly identifies Apple2Dreem exports as genuine semicolon-delimited CSV files. See the [OSCAR Dreem loader source](https://gitlab.com/CrimsonNape/OSCAR-SQL/-/blob/1bb82309bd0b62b3c173561de55402a941ebf1da/oscar/SleepLib/loader_plugins/dreem_loader.cpp#L79-80).
+
 ## Input data
 
 One should provide input files from the Apple Watch using one of two iOS apps: 
